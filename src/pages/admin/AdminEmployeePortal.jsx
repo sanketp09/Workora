@@ -24,24 +24,6 @@ const AdminEmployeePortal = () => {
     certifications: []
   });
 
-  const [salaryData, setSalaryData] = useState({
-    wageType: 'monthly',
-    monthlyWage: 0,
-    yearlyWage: 0,
-    workingDays: 5,
-    breakTime: 60,
-    basicSalary: 0,
-    hra: 0,
-    standardAllowance: 0,
-    performanceBonus: 0,
-    lta: 0,
-    fixedAllowance: 0,
-    pfEmployee: 0,
-    pfEmployer: 0,
-    pfRate: 12,
-    professionalTax: 200
-  });
-
   // Fetch employee data on component mount
   useEffect(() => {
     if (employeeId) {
@@ -57,53 +39,12 @@ const AdminEmployeePortal = () => {
         if (data.employeeData) {
           setEmployeeData(data.employeeData);
         }
-        if (data.salaryData) {
-          setSalaryData(data.salaryData);
-        }
       }
     } catch (error) {
       console.error('Error fetching employee data:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calculate totals when salary components change
-  useEffect(() => {
-    const grossSalary = 
-      parseFloat(salaryData.basicSalary || 0) +
-      parseFloat(salaryData.hra || 0) +
-      parseFloat(salaryData.standardAllowance || 0) +
-      parseFloat(salaryData.performanceBonus || 0) +
-      parseFloat(salaryData.lta || 0) +
-      parseFloat(salaryData.fixedAllowance || 0);
-
-    // Calculate PF based on basic salary
-    const basicSal = parseFloat(salaryData.basicSalary || 0);
-    const pfAmount = (basicSal * salaryData.pfRate) / 100;
-
-    setSalaryData(prev => ({
-      ...prev,
-      monthlyWage: grossSalary,
-      yearlyWage: grossSalary * 12,
-      pfEmployee: pfAmount,
-      pfEmployer: pfAmount
-    }));
-  }, [
-    salaryData.basicSalary,
-    salaryData.hra,
-    salaryData.standardAllowance,
-    salaryData.performanceBonus,
-    salaryData.lta,
-    salaryData.fixedAllowance,
-    salaryData.pfRate
-  ]);
-
-  const handleSalaryFieldChange = (field, value) => {
-    setSalaryData(prev => ({
-      ...prev,
-      [field]: parseFloat(value) || 0
-    }));
   };
 
   const addSkill = () => {
@@ -156,8 +97,7 @@ const AdminEmployeePortal = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          employeeData,
-          salaryData
+          employeeData
         })
       });
 
@@ -171,14 +111,6 @@ const AdminEmployeePortal = () => {
       alert('An error occurred while saving data.');
     }
   };
-
-  const totalSalaryComponents = 
-    parseFloat(salaryData.basicSalary || 0) +
-    parseFloat(salaryData.hra || 0) +
-    parseFloat(salaryData.standardAllowance || 0) +
-    parseFloat(salaryData.performanceBonus || 0) +
-    parseFloat(salaryData.lta || 0) +
-    parseFloat(salaryData.fixedAllowance || 0);
 
   if (loading) {
     return (
@@ -431,242 +363,85 @@ const AdminEmployeePortal = () => {
             )}
 
             {activeTab === 'salary' && (
-              <div className="space-y-8">
-                {/* Wage Information */}
-                <section>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Wage Information</h2>
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Wage (₹)</label>
-                        <input
-                          type="number"
-                          value={salaryData.monthlyWage}
-                          readOnly
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Calculated from salary components</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Wage (₹)</label>
-                        <input
-                          type="number"
-                          value={salaryData.yearlyWage}
-                          readOnly
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Monthly wage × 12</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">No. of working days in a week</label>
-                        <input
-                          type="number"
-                          value={salaryData.workingDays}
-                          onChange={(e) => setSalaryData({...salaryData, workingDays: parseFloat(e.target.value)})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Break Time (minutes/day)</label>
-                        <input
-                          type="number"
-                          value={salaryData.breakTime}
-                          onChange={(e) => setSalaryData({...salaryData, breakTime: parseFloat(e.target.value)})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
+              <div className="space-y-6">
+                <p className="text-sm text-gray-600">
+                  View and analyze employee salary structure configuration
+                </p>
+                
+                {/* Salary Overview Card */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Salary Overview</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Monthly Salary</p>
+                      <p className="text-2xl font-bold text-blue-600">₹45,000</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Annual CTC</p>
+                      <p className="text-2xl font-bold text-green-600">₹5,40,000</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Salary Grade</p>
+                      <p className="text-2xl font-bold text-purple-600">Level 3</p>
                     </div>
                   </div>
-                </section>
+                </div>
 
-                {/* Salary Components */}
-                <section>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Salary Components</h2>
-                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Basic Salary (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.basicSalary}
-                          onChange={(e) => handleSalaryFieldChange('basicSalary', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter basic salary"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.basicSalary / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">House Rent Allowance (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.hra}
-                          onChange={(e) => handleSalaryFieldChange('hra', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter HRA"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.hra / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Standard Allowance (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.standardAllowance}
-                          onChange={(e) => handleSalaryFieldChange('standardAllowance', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter standard allowance"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.standardAllowance / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Performance Bonus (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.performanceBonus}
-                          onChange={(e) => handleSalaryFieldChange('performanceBonus', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter performance bonus"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.performanceBonus / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Leave Travel Allowance (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.lta}
-                          onChange={(e) => handleSalaryFieldChange('lta', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter LTA"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.lta / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Allowance (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.fixedAllowance}
-                          onChange={(e) => handleSalaryFieldChange('fixedAllowance', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Enter fixed allowance"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Percentage: {totalSalaryComponents > 0 ? ((salaryData.fixedAllowance / totalSalaryComponents) * 100).toFixed(2) : 0}%
-                        </p>
-                      </div>
+                {/* Component Breakdown */}
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Salary Component Breakdown</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <span className="font-medium">Basic Salary (40%)</span>
+                      <span className="font-bold">₹18,000</span>
                     </div>
-                    
-                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <span className="font-medium">HRA (30%)</span>
+                      <span className="font-bold">₹13,500</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <span className="font-medium">Special Allowance (20%)</span>
+                      <span className="font-bold">₹9,000</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                      <span className="font-medium">Other Allowances (10%)</span>
+                      <span className="font-bold">₹4,500</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deductions */}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">Deductions</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">PF Contribution</span>
+                      <span className="font-bold text-red-600">- ₹1,800</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Professional Tax</span>
+                      <span className="font-bold text-red-600">- ₹200</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Income Tax (TDS)</span>
+                      <span className="font-bold text-red-600">- ₹3,000</span>
+                    </div>
+                    <div className="border-t border-red-300 pt-3 mt-3">
                       <div className="flex justify-between items-center">
-                        <span className="text-lg font-bold text-gray-900">Total Monthly Gross Salary:</span>
-                        <span className="text-2xl font-bold text-blue-600">₹{totalSalaryComponents.toFixed(2)}</span>
+                        <span className="text-lg font-bold">Total Deductions</span>
+                        <span className="text-xl font-bold text-red-600">- ₹5,000</span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-4">
-                    * Enter each salary component amount manually
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    * Percentages are calculated automatically based on total gross salary
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    * PF will be calculated based on Basic Salary at the specified rate
-                  </p>
-                </section>
+                </div>
 
-                {/* Provident Fund */}
-                <section>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Provident Fund (PF) Contribution</h2>
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">PF Rate (%)</label>
-                        <input
-                          type="number"
-                          value={salaryData.pfRate}
-                          onChange={(e) => setSalaryData({...salaryData, pfRate: parseFloat(e.target.value)})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Calculated based on Basic Salary</p>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Employee PF (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.pfEmployee}
-                          readOnly
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Employer PF (₹/month)</label>
-                        <input
-                          type="number"
-                          value={salaryData.pfEmployer}
-                          readOnly
-                          className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
-                        />
-                      </div>
-                    </div>
+                {/* Net Salary */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-bold text-gray-900">Net Take Home Salary</span>
+                    <span className="text-3xl font-bold text-green-600">₹40,000</span>
                   </div>
-                </section>
-
-                {/* Tax Deductions */}
-                <section>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Tax Deductions</h2>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Professional Tax (₹)</label>
-                        <input
-                          type="number"
-                          value={salaryData.professionalTax}
-                          onChange={(e) => setSalaryData({...salaryData, professionalTax: parseFloat(e.target.value)})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Fixed amount deducted from Gross Salary</p>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* Salary Summary */}
-                <section>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Salary Summary</h2>
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-700">Gross Salary:</span>
-                        <span className="text-xl font-bold text-gray-900">₹{totalSalaryComponents.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-700">Total Deductions:</span>
-                        <span className="text-xl font-bold text-red-600">₹{(salaryData.pfEmployee + salaryData.professionalTax).toFixed(2)}</span>
-                      </div>
-                      <div className="md:col-span-2 border-t border-blue-300 pt-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-bold text-gray-900">Net Salary (Take Home):</span>
-                          <span className="text-2xl font-bold text-green-600">
-                            ₹{(totalSalaryComponents - salaryData.pfEmployee - salaryData.professionalTax).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </section>
+                </div>
               </div>
             )}
 

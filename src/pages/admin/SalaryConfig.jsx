@@ -1,13 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   DollarSign,
   Save,
-  AlertTriangle,
-  Plus,
-  Minus,
-  Info,
-  ChevronDown,
-  ChevronUp,
   Search,
   Edit2,
   Check
@@ -17,85 +11,94 @@ import { useToast } from '../../context/ToastContext';
 import './SalaryConfig.css';
 
 export default function SalaryConfig() {
-  const { employees, getEmployeeSalary, updateSalary } = useData();
+  const { employees } = useData();
   const toast = useToast();
   
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id);
-  const [isEditing, setIsEditing] = useState(false);
-  const [expandedSection, setExpandedSection] = useState('structure');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const salary = getEmployeeSalary(selectedEmployee);
-  const employee = employees.find(e => e.id === selectedEmployee);
-
-  // Editable salary structure
-  const [editedSalary, setEditedSalary] = useState({
-    wage: salary.wage,
-    basicPercent: 50,
-    hraPercent: 25, // 50% of basic
-    allowancePercent: 8.33,
-    bonusPercent: 8.33,
-    ltaPercent: 8.33,
-    pfPercent: 12,
+  const [salaryData, setSalaryData] = useState({
+    wageType: 'monthly',
+    monthlyWage: 0,
+    yearlyWage: 0,
+    workingDays: 5,
+    breakTime: 60,
+    basicSalary: 0,
+    hra: 0,
+    standardAllowance: 0,
+    performanceBonus: 0,
+    lta: 0,
+    fixedAllowance: 0,
+    pfEmployee: 0,
+    pfEmployer: 0,
+    pfRate: 12,
     professionalTax: 200
   });
 
-  const calculateComponents = (wage, structure) => {
-    const basic = wage * (structure.basicPercent / 100);
-    const hra = basic * (structure.hraPercent / 100) * 2; // HRA is % of basic
-    const allowance = wage * (structure.allowancePercent / 100);
-    const bonus = wage * (structure.bonusPercent / 100);
-    const lta = wage * (structure.ltaPercent / 100);
-    const allocated = basic + hra + allowance + bonus + lta;
-    const fixedAllowance = wage - allocated;
-    
-    const pfDeduction = basic * (structure.pfPercent / 100);
-    const totalDeductions = pfDeduction + structure.professionalTax;
-    const netSalary = wage - totalDeductions;
+  const employee = employees.find(e => e.id === selectedEmployee);
 
-    return {
-      basic,
-      hra,
-      allowance,
-      bonus,
-      lta,
-      fixedAllowance,
-      pfDeduction,
-      professionalTax: structure.professionalTax,
-      totalDeductions,
-      netSalary,
-      isValid: fixedAllowance >= 0
-    };
+  // Calculate totals when salary components change
+  useEffect(() => {
+    const grossSalary = 
+      parseFloat(salaryData.basicSalary || 0) +
+      parseFloat(salaryData.hra || 0) +
+      parseFloat(salaryData.standardAllowance || 0) +
+      parseFloat(salaryData.performanceBonus || 0) +
+      parseFloat(salaryData.lta || 0) +
+      parseFloat(salaryData.fixedAllowance || 0);
+
+    const basicSal = parseFloat(salaryData.basicSalary || 0);
+    const pfAmount = (basicSal * salaryData.pfRate) / 100;
+
+    setSalaryData(prev => ({
+      ...prev,
+      monthlyWage: grossSalary,
+      yearlyWage: grossSalary * 12,
+      pfEmployee: pfAmount,
+      pfEmployer: pfAmount
+    }));
+  }, [
+    salaryData.basicSalary,
+    salaryData.hra,
+    salaryData.standardAllowance,
+    salaryData.performanceBonus,
+    salaryData.lta,
+    salaryData.fixedAllowance,
+    salaryData.pfRate
+  ]);
+
+  const totalSalaryComponents =
+    parseFloat(salaryData.basicSalary || 0) +
+    parseFloat(salaryData.hra || 0) +
+    parseFloat(salaryData.standardAllowance || 0) +
+    parseFloat(salaryData.performanceBonus || 0) +
+    parseFloat(salaryData.lta || 0) +
+    parseFloat(salaryData.fixedAllowance || 0);
+
+  const handleSalaryFieldChange = (field, value) => {
+    setSalaryData({...salaryData, [field]: parseFloat(value) || 0});
   };
 
-  const components = calculateComponents(editedSalary.wage, editedSalary);
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const handleSave = () => {
-    if (!components.isValid) {
-      toast.error('Total components exceed the wage. Please adjust.');
-      return;
+  const handleSave = async () => {
+    try {
+      const response = await fetch(`/api/admin/employees/${selectedEmployee}/salary`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ salaryData })
+      });
+      
+      if (response.ok) {
+        toast.success('Salary information saved successfully!');
+      } else {
+        toast.error('Failed to save salary information');
+      }
+    } catch (error) {
+      console.error('Error saving salary:', error);
+      toast.error('Error saving salary information');
     }
-    
-    if (updateSalary) {
-      updateSalary(selectedEmployee, { wage: editedSalary.wage });
-    }
-    toast.success('Salary structure updated successfully');
-    setIsEditing(false);
   };
 
   const handleEmployeeChange = (empId) => {
     setSelectedEmployee(empId);
-    const empSalary = getEmployeeSalary(empId);
-    setEditedSalary(prev => ({ ...prev, wage: empSalary.wage }));
-    setIsEditing(false);
   };
 
   const filteredEmployees = employees.filter(emp =>
@@ -107,8 +110,8 @@ export default function SalaryConfig() {
       {/* Header */}
       <div className="admin-header">
         <div>
-          <h1>Salary & Payroll Configuration</h1>
-          <p>Configure salary structures and deductions</p>
+          <h1>Salary Configuration</h1>
+          <p>Configure detailed salary components for employees</p>
         </div>
       </div>
 
@@ -146,213 +149,256 @@ export default function SalaryConfig() {
           </div>
         </div>
 
-        {/* Salary Configuration */}
-        <div className="salary-config-panel">
-          {/* Current Salary Card */}
-          <div className="current-salary-card">
-            <div className="salary-header">
-              <div>
-                <span>Current CTC</span>
-                <h2>{formatCurrency(salary.wage)}</h2>
-                <span className="emp-label">{employee?.name}</span>
-              </div>
-              {!isEditing ? (
-                <button className="btn btn-primary" onClick={() => setIsEditing(true)}>
-                  <Edit2 size={18} />
-                  Edit Salary Structure
-                </button>
-              ) : (
-                <div className="edit-actions">
-                  <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-                    Cancel
-                  </button>
-                  <button className="btn btn-success" onClick={handleSave}>
-                    <Save size={18} />
-                    Save Changes
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {isEditing && (
-              <div className="wage-editor">
-                <label>Fixed Wage (CTC)</label>
-                <div className="wage-input">
-                  <span>₹</span>
-                  <input
-                    type="number"
-                    className="input"
-                    value={editedSalary.wage}
-                    onChange={(e) => setEditedSalary({ ...editedSalary, wage: parseInt(e.target.value) || 0 })}
-                  />
-                  <span>/month</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Salary Structure */}
-          <div className="config-section card">
-            <button 
-              className="section-toggle"
-              onClick={() => setExpandedSection(expandedSection === 'structure' ? '' : 'structure')}
-            >
-              <div className="toggle-left">
-                <Plus size={20} className="text-success" />
-                <span>Salary Components (Earnings)</span>
-              </div>
-              <div className="toggle-right">
-                <span className="section-total text-success">{formatCurrency(editedSalary.wage)}</span>
-                {expandedSection === 'structure' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </div>
-            </button>
-
-            {expandedSection === 'structure' && (
-              <div className="section-content">
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>Basic Salary</span>
-                    <span className="percent">{editedSalary.basicPercent}% of CTC</span>
+        {/* Salary Configuration Panel */}
+        <div className="salary-details-panel card">
+          <h2 className="panel-title">Salary Details for {employee?.name}</h2>
+          
+          <div className="space-y-8">
+            {/* Wage Information */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Wage Information</h2>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Wage (₹)</label>
+                    <input
+                      type="number"
+                      value={salaryData.monthlyWage}
+                      readOnly
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Calculated from salary components</p>
                   </div>
-                  <div className="component-value">
-                    {formatCurrency(components.basic)}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Wage (₹)</label>
+                    <input
+                      type="number"
+                      value={salaryData.yearlyWage}
+                      readOnly
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Monthly wage × 12</p>
                   </div>
-                </div>
-
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>HRA</span>
-                    <span className="percent">{editedSalary.hraPercent}% of Basic</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">No. of working days in a week</label>
+                    <input
+                      type="number"
+                      value={salaryData.workingDays}
+                      onChange={(e) => setSalaryData({...salaryData, workingDays: parseFloat(e.target.value)})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
-                  <div className="component-value">
-                    {formatCurrency(components.hra)}
-                  </div>
-                </div>
-
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>Standard Allowance</span>
-                    <span className="percent">{editedSalary.allowancePercent}%</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(components.allowance)}
-                  </div>
-                </div>
-
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>Performance Bonus</span>
-                    <span className="percent">{editedSalary.bonusPercent}%</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(components.bonus)}
-                  </div>
-                </div>
-
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>LTA</span>
-                    <span className="percent">{editedSalary.ltaPercent}%</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(components.lta)}
-                  </div>
-                </div>
-
-                <div className={`component-row fixed ${!components.isValid ? 'invalid' : ''}`}>
-                  <div className="component-label">
-                    <span>Fixed Allowance</span>
-                    <span className="percent">Auto-balanced</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(components.fixedAllowance)}
-                    {!components.isValid && (
-                      <AlertTriangle size={16} className="text-error" />
-                    )}
-                  </div>
-                </div>
-
-                <div className="component-row total">
-                  <div className="component-label">
-                    <span>Total Earnings</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(editedSalary.wage)}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Break Time (minutes/day)</label>
+                    <input
+                      type="number"
+                      value={salaryData.breakTime}
+                      onChange={(e) => setSalaryData({...salaryData, breakTime: parseFloat(e.target.value)})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </section>
 
-          {/* Deductions */}
-          <div className="config-section card">
-            <button 
-              className="section-toggle"
-              onClick={() => setExpandedSection(expandedSection === 'deductions' ? '' : 'deductions')}
-            >
-              <div className="toggle-left">
-                <Minus size={20} className="text-error" />
-                <span>Deductions</span>
-              </div>
-              <div className="toggle-right">
-                <span className="section-total text-error">- {formatCurrency(components.totalDeductions)}</span>
-                {expandedSection === 'deductions' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </div>
-            </button>
-
-            {expandedSection === 'deductions' && (
-              <div className="section-content">
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>PF (Employee Contribution)</span>
-                    <span className="percent">{editedSalary.pfPercent}% of Basic</span>
+            {/* Salary Components */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Salary Components</h2>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Basic Salary (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.basicSalary}
+                      onChange={(e) => handleSalaryFieldChange('basicSalary', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter basic salary"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.basicSalary / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
                   </div>
-                  <div className="component-value">
-                    {formatCurrency(components.pfDeduction)}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">House Rent Allowance (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.hra}
+                      onChange={(e) => handleSalaryFieldChange('hra', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter HRA"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.hra / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Standard Allowance (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.standardAllowance}
+                      onChange={(e) => handleSalaryFieldChange('standardAllowance', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter standard allowance"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.standardAllowance / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Performance Bonus (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.performanceBonus}
+                      onChange={(e) => handleSalaryFieldChange('performanceBonus', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter performance bonus"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.performanceBonus / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Leave Travel Allowance (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.lta}
+                      onChange={(e) => handleSalaryFieldChange('lta', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter LTA"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.lta / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Allowance (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.fixedAllowance}
+                      onChange={(e) => handleSalaryFieldChange('fixedAllowance', e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Enter fixed allowance"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Percentage: {totalSalaryComponents > 0 ? ((salaryData.fixedAllowance / totalSalaryComponents) * 100).toFixed(2) : 0}%
+                    </p>
                   </div>
                 </div>
-
-                <div className="component-row">
-                  <div className="component-label">
-                    <span>Professional Tax</span>
-                    <span className="percent">Fixed</span>
-                  </div>
-                  <div className="component-value">
-                    {formatCurrency(components.professionalTax)}
-                  </div>
-                </div>
-
-                <div className="component-row total">
-                  <div className="component-label">
-                    <span>Total Deductions</span>
-                  </div>
-                  <div className="component-value text-error">
-                    - {formatCurrency(components.totalDeductions)}
+                
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Total Monthly Gross Salary:</span>
+                    <span className="text-2xl font-bold text-blue-600">₹{totalSalaryComponents.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+              <p className="text-sm text-gray-600 mt-4">
+                * Enter each salary component amount manually
+              </p>
+              <p className="text-sm text-gray-600">
+                * Percentages are calculated automatically based on total gross salary
+              </p>
+              <p className="text-sm text-gray-600">
+                * PF will be calculated based on Basic Salary at the specified rate
+              </p>
+            </section>
 
-          {/* Net Salary */}
-          <div className="net-salary-card">
-            <div>
-              <span>Net Salary (Take Home)</span>
-              <h2>{formatCurrency(components.netSalary)}</h2>
-            </div>
-          </div>
+            {/* Provident Fund */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Provident Fund (PF) Contribution</h2>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">PF Rate (%)</label>
+                    <input
+                      type="number"
+                      value={salaryData.pfRate}
+                      onChange={(e) => setSalaryData({...salaryData, pfRate: parseFloat(e.target.value)})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Calculated based on Basic Salary</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employee PF (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.pfEmployee}
+                      readOnly
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employer PF (₹/month)</label>
+                    <input
+                      type="number"
+                      value={salaryData.pfEmployer}
+                      readOnly
+                      className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
 
-          {/* Rules */}
-          <div className="rules-note">
-            <Info size={18} />
-            <div>
-              <strong>Salary Structure Rules:</strong>
-              <ul>
-                <li>Total components must not exceed CTC (Fixed Wage)</li>
-                <li>Percentage-based components auto-update when CTC changes</li>
-                <li>Fixed Allowance is automatically recalculated to balance the structure</li>
-                <li>PF is calculated on Basic salary only</li>
-              </ul>
+            {/* Tax Deductions */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Tax Deductions</h2>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Tax (₹)</label>
+                    <input
+                      type="number"
+                      value={salaryData.professionalTax}
+                      onChange={(e) => setSalaryData({...salaryData, professionalTax: parseFloat(e.target.value)})}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Fixed amount deducted from Gross Salary</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Salary Summary */}
+            <section>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Salary Summary</h2>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Gross Salary:</span>
+                    <span className="text-xl font-bold text-gray-900">₹{totalSalaryComponents.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-gray-700">Total Deductions:</span>
+                    <span className="text-xl font-bold text-red-600">₹{(salaryData.pfEmployee + salaryData.professionalTax).toFixed(2)}</span>
+                  </div>
+                  <div className="md:col-span-2 border-t border-blue-300 pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-gray-900">Net Salary (Take Home):</span>
+                      <span className="text-2xl font-bold text-green-600">
+                        ₹{(totalSalaryComponents - salaryData.pfEmployee - salaryData.professionalTax).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-lg font-semibold shadow-lg"
+              >
+                <Save size={20} />
+                Save Changes
+              </button>
             </div>
           </div>
         </div>

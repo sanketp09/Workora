@@ -24,9 +24,7 @@ import EmployeeManagement from './pages/admin/EmployeeManagement';
 import AdminEmployeePortal from './pages/admin/AdminEmployeePortal';
 import AttendanceOversight from './pages/admin/AttendanceOversight';
 import LeaveApproval from './pages/admin/LeaveApproval';
-import SalaryConfig from './pages/admin/SalaryConfig';
-import PayrollProcessing from './pages/admin/PayrollProcessing';
-import PayrollIntelligence from './pages/admin/PayrollIntelligence';
+import AdminSalary from './pages/admin/Salary';
 import AuditLogs from './pages/admin/AuditLogs';
 import AdminReports from './pages/admin/AdminReports';
 
@@ -99,9 +97,7 @@ function AppRoutes() {
           <Route path="employees/:employeeId/profile" element={<AdminEmployeePortal />} />
           <Route path="attendance" element={<AttendanceOversight />} />
           <Route path="leave-approval" element={<LeaveApproval />} />
-          <Route path="salary-config" element={<SalaryConfig />} />
-          <Route path="payroll-processing" element={<PayrollProcessing />} />
-          <Route path="payroll-intelligence" element={<PayrollIntelligence />} />
+          <Route path="salary" element={<AdminSalary />} />
           <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="reports" element={<AdminReports />} />
         </Route>
