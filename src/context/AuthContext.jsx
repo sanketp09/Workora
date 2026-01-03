@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -8,81 +7,70 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session
-    const savedUser = localStorage.getItem('workora_user');
-    const token = localStorage.getItem('authToken');
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-    }
+    // Auto-login with mock user (bypass authentication)
+    const mockUser = {
+      id: 'mock-user-1',
+      email: 'demo@workora.com',
+      name: 'Demo User',
+      role: 'admin',
+      department: 'Engineering',
+      designation: 'System Admin',
+      avatar: null,
+      phone: '+1 234 567 8901',
+      joinDate: '2024-01-01',
+    };
+    
+    setUser(mockUser);
+    localStorage.setItem('workora_user', JSON.stringify(mockUser));
     setIsLoading(false);
   }, []);
 
   const signIn = async (email, password) => {
-    try {
-      const response = await authAPI.login({ email, password });
-      const userData = {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.name,
-        role: response.user.role,
-        department: response.user.department,
-        designation: response.user.designation,
-      };
-      
-      setUser(userData);
-      localStorage.setItem('workora_user', JSON.stringify(userData));
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Sign in error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Invalid email or password'
-      };
-    }
+    // Always return success with mock user
+    const mockUser = {
+      id: 'mock-user-1',
+      email: email || 'demo@workora.com',
+      name: 'Demo User',
+      role: 'admin',
+      department: 'Engineering',
+      designation: 'System Admin',
+      avatar: null,
+      phone: '+1 234 567 8901',
+      joinDate: '2024-01-01',
+    };
+    
+    setUser(mockUser);
+    localStorage.setItem('workora_user', JSON.stringify(mockUser));
+    return { success: true };
   };
 
   const signUp = async (userData) => {
-    try {
-      const response = await authAPI.register({
-        email: userData.email,
-        password: userData.password,
-        name: userData.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        role: userData.role || 'employee',
-        employee_id: userData.employeeId,
-      });
-      
-      const newUser = {
-        id: response.user.id,
-        email: response.user.email,
-        name: response.user.name,
-        role: response.user.role,
-        department: response.user.department || 'Unassigned',
-        designation: response.user.designation || 'New Employee',
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('workora_user', JSON.stringify(newUser));
-      
-      return { success: true };
-    } catch (error) {
-      console.error('Sign up error:', error);
-      return { 
-        success: false, 
-        error: error.message || 'Registration failed'
-      };
-    }
+    // Always return success with mock user
+    const mockUser = {
+      id: 'mock-user-' + Date.now(),
+      email: userData.email || 'demo@workora.com',
+      name: userData.email ? userData.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Demo User',
+      role: userData.role || 'employee',
+      department: 'Engineering',
+      designation: 'System Admin',
+      avatar: null,
+      phone: '+1 234 567 8901',
+      joinDate: new Date().toISOString().split('T')[0],
+    };
+    
+    setUser(mockUser);
+    localStorage.setItem('workora_user', JSON.stringify(mockUser));
+    return { success: true };
   };
 
   const signOut = () => {
-    authAPI.logout();
     setUser(null);
     localStorage.removeItem('workora_user');
   };
 
   const switchRole = () => {
     if (user) {
-      const newRole = user.role === 'employee' ? 'hr' : 'employee';
+      const newRole = user.role === 'employee' ? 'admin' : 'employee';
       const updatedUser = { ...user, role: newRole };
       setUser(updatedUser);
       localStorage.setItem('workora_user', JSON.stringify(updatedUser));

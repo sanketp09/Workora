@@ -7,7 +7,9 @@ import {
   Upload,
   FileText,
   Filter,
-  Search
+  Search,
+  MessageSquare,
+  TrendingUp
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import './AttendanceOversight.css';
@@ -21,6 +23,15 @@ export default function AttendanceOversight() {
   const [currentPage, setCurrentPage] = useState(1);
   const [attendanceData, setAttendanceData] = useState({});
   const [loading, setLoading] = useState(true);
+  
+  // Query feature states
+  const [showQuerySection, setShowQuerySection] = useState(false);
+  const [queryEmployeeName, setQueryEmployeeName] = useState('');
+  const [queryStartDate, setQueryStartDate] = useState('');
+  const [queryEndDate, setQueryEndDate] = useState('');
+  const [queryResult, setQueryResult] = useState(null);
+  const [queryLoading, setQueryLoading] = useState(false);
+  
   const itemsPerPage = 6;
 
   const year = currentDate.getFullYear();
@@ -118,6 +129,107 @@ export default function AttendanceOversight() {
     return colors[index];
   };
 
+  const handleQuerySubmit = async () => {
+    if (!queryEmployeeName.trim() || !queryStartDate || !queryEndDate) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    setQueryLoading(true);
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    // Find employee by name (case insensitive)
+    const employee = employees.find(emp => 
+      emp.name?.toLowerCase().includes(queryEmployeeName.toLowerCase())
+    );
+    
+    if (!employee) {
+      setQueryResult({
+        error: true,
+        message: `No employee found matching "${queryEmployeeName}"`
+      });
+      setQueryLoading(false);
+      return;
+    }
+
+    // Parse dates
+    const start = new Date(queryStartDate);
+    const end = new Date(queryEndDate);
+    
+    if (end < start) {
+      setQueryResult({
+        error: true,
+        message: 'End date must be after start date'
+      });
+      setQueryLoading(false);
+      return;
+    }
+
+    // Generate attendance data for date range
+    let totalDays = 0;
+    let workingDays = 0;
+    let presentDays = 0;
+    let absentDays = 0;
+    let leaveDays = 0;
+    let lateDays = 0;
+    let halfDays = 0;
+    let totalHours = 0;
+
+    const currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dayOfWeek = currentDate.getDay();
+      totalDays++;
+      
+      // Skip weekends
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        workingDays++;
+        
+        // Simulate attendance pattern
+        const rand = Math.random();
+        if (rand > 0.85) {
+          absentDays++;
+        } else if (rand > 0.75) {
+          leaveDays++;
+        } else if (rand > 0.70) {
+          lateDays++;
+          presentDays++;
+          totalHours += 8;
+        } else if (rand > 0.65) {
+          halfDays++;
+          presentDays++;
+          totalHours += 4;
+        } else {
+          presentDays++;
+          totalHours += 9;
+        }
+      }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    setQueryResult({
+      error: false,
+      employeeName: employee.name,
+      employeeId: employee.employeeId,
+      department: employee.department,
+      startDate: queryStartDate,
+      endDate: queryEndDate,
+      totalDays,
+      workingDays,
+      presentDays,
+      absentDays,
+      leaveDays,
+      lateDays,
+      halfDays,
+      totalHours,
+      attendancePercentage: workingDays > 0 ? ((presentDays / workingDays) * 100).toFixed(1) : 0
+    });
+    
+    setQueryLoading(false);
+  };
+
   return (
     <div className="attendance-oversight animate-fadeIn">
       <div className="attendance-header">
@@ -194,6 +306,169 @@ export default function AttendanceOversight() {
           }}
           className="search-input"
         />
+      </div>
+
+      {/* Query Section */}
+      <div className="query-section">
+        <div className="query-header">
+          <button 
+            className="query-toggle-btn"
+            onClick={() => setShowQuerySection(!showQuerySection)}
+          >
+            <MessageSquare size={18} />
+            <span>Employee Attendance Query</span>
+            <ChevronRight 
+              size={18} 
+              style={{ 
+                transform: showQuerySection ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.3s ease'
+              }} 
+            />
+          </button>
+        </div>
+        
+        {showQuerySection && (
+          <div className="query-content animate-fadeIn">
+            <div className="query-description">
+              <TrendingUp size={16} />
+              <p>Search for any employee's working days, leaves, and attendance details for a specific time period</p>
+            </div>
+            
+            <div className="query-form">
+              <div className="query-input-group">
+                <label>Employee Full Name</label>
+                <input
+                  type="text"
+                  placeholder="Enter employee full name..."
+                  value={queryEmployeeName}
+                  onChange={(e) => setQueryEmployeeName(e.target.value)}
+                  className="query-input"
+                />
+              </div>
+              
+              <div className="query-date-group">
+                <div className="query-input-group">
+                  <label>Start Date</label>
+                  <input
+                    type="date"
+                    value={queryStartDate}
+                    onChange={(e) => setQueryStartDate(e.target.value)}
+                    className="query-input"
+                  />
+                </div>
+                
+                <div className="query-input-group">
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    value={queryEndDate}
+                    onChange={(e) => setQueryEndDate(e.target.value)}
+                    className="query-input"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                className="query-submit-btn"
+                onClick={handleQuerySubmit}
+                disabled={queryLoading}
+              >
+                {queryLoading ? (
+                  <>
+                    <div className="spinner-small"></div>
+                    <span>Searching...</span>
+                  </>
+                ) : (
+                  <>
+                    <Search size={18} />
+                    <span>Search Attendance</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {queryResult && (
+              <div className={`query-result animate-fadeIn ${queryResult.error ? 'error' : ''}`}>
+                {queryResult.error ? (
+                  <div className="query-error">
+                    <span className="error-icon">⚠️</span>
+                    <p>{queryResult.message}</p>
+                  </div>
+                ) : (
+                  <div className="query-success">
+                    <div className="result-header">
+                      <div className="result-employee">
+                        <div 
+                          className="employee-avatar-small"
+                          style={{ background: getAvatarColor(queryResult.employeeName) }}
+                        >
+                          {getInitials(queryResult.employeeName)}
+                        </div>
+                        <div>
+                          <h3>{queryResult.employeeName}</h3>
+                          <p>{queryResult.employeeId} • {queryResult.department}</p>
+                        </div>
+                      </div>
+                      <div className="result-period">
+                        <Calendar size={16} />
+                        <span>{new Date(queryResult.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(queryResult.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="result-stats">
+                      <div className="stat-card">
+                        <div className="stat-label">Total Days</div>
+                        <div className="stat-value">{queryResult.totalDays}</div>
+                      </div>
+                      <div className="stat-card">
+                        <div className="stat-label">Working Days</div>
+                        <div className="stat-value">{queryResult.workingDays}</div>
+                      </div>
+                      <div className="stat-card present">
+                        <div className="stat-label">Present</div>
+                        <div className="stat-value">{queryResult.presentDays}</div>
+                      </div>
+                      <div className="stat-card absent">
+                        <div className="stat-label">Absent</div>
+                        <div className="stat-value">{queryResult.absentDays}</div>
+                      </div>
+                      <div className="stat-card leave">
+                        <div className="stat-label">On Leave</div>
+                        <div className="stat-value">{queryResult.leaveDays}</div>
+                      </div>
+                      <div className="stat-card late">
+                        <div className="stat-label">Late</div>
+                        <div className="stat-value">{queryResult.lateDays}</div>
+                      </div>
+                      <div className="stat-card halfday">
+                        <div className="stat-label">Half Day</div>
+                        <div className="stat-value">{queryResult.halfDays}</div>
+                      </div>
+                      <div className="stat-card hours">
+                        <div className="stat-label">Total Hours</div>
+                        <div className="stat-value">{queryResult.totalHours}h</div>
+                      </div>
+                    </div>
+                    
+                    <div className="result-percentage">
+                      <div className="percentage-label">
+                        <TrendingUp size={18} />
+                        <span>Attendance Percentage</span>
+                      </div>
+                      <div className="percentage-bar-container">
+                        <div 
+                          className="percentage-bar" 
+                          style={{ width: `${queryResult.attendancePercentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="percentage-value">{queryResult.attendancePercentage}%</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main Attendance Table */}
