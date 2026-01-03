@@ -1,0 +1,382 @@
+.payroll-page {
+  /* Full width layout */
+}
+
+.page-title p {
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.current-month {
+  min-width: 140px;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Score Banner */
+.score-banner {
+  background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.score-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.overall-score-display {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.score-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.score-info h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.score-label {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.score-label.excellent { background: rgba(16, 185, 129, 0.3); }
+.score-label.good { background: rgba(245, 158, 11, 0.3); }
+.score-label.average { background: rgba(239, 68, 68, 0.3); }
+.score-label.needs { background: rgba(239, 68, 68, 0.4); }
+
+.score-info p {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.payroll-estimate {
+  text-align: right;
+}
+
+.payroll-estimate span {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.payroll-estimate h3 {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 8px 0;
+}
+
+.deduction-note {
+  display: block;
+  font-size: 13px;
+  color: #fca5a5;
+}
+
+/* Summary Grid */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+}
+
+.summary-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+}
+
+.summary-icon.present {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.summary-icon.absent {
+  background: var(--error-light);
+  color: var(--error);
+}
+
+.summary-icon.leave {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.summary-icon.remaining {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.summary-content span {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+.summary-content h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.summary-content p {
+  font-size: 12px;
+  color: var(--gray-400);
+}
+
+/* Scores Section */
+.scores-section {
+  margin-bottom: 24px;
+}
+
+.scores-section > h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.scores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.score-gauge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.gauge-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  margin-bottom: 16px;
+}
+
+.gauge-score {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.gauge-info h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.gauge-label {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.gauge-label.excellent {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.gauge-label.good {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.gauge-label.average,
+.gauge-label.needs {
+  background: var(--error-light);
+  color: var(--error);
+}
+
+/* Bottom Section */
+.bottom-section {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+}
+
+.trend-chart {
+  padding: 24px;
+}
+
+.trend-chart h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.chart-container {
+  height: 250px;
+}
+
+.insights-section > h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.insight-card.success {
+  border-left: 3px solid var(--success);
+}
+
+.insight-card.warning {
+  border-left: 3px solid var(--warning);
+}
+
+.insight-card.info {
+  border-left: 3px solid var(--primary);
+}
+
+.insight-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+}
+
+.insight-icon.success {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.insight-icon.warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.insight-icon.info {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.insight-content h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.insight-content p {
+  font-size: 13px;
+  color: var(--gray-500);
+  line-height: 1.4;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .score-banner-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 24px;
+  }
+  
+  .overall-score-display {
+    flex-direction: column;
+  }
+  
+  .payroll-estimate {
+    text-align: center;
+  }
+  
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .scores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .bottom-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .score-banner {
+    padding: 24px;
+  }
+  
+  .score-info h2 {
+    font-size: 20px;
+  }
+  
+  .payroll-estimate h3 {
+    font-size: 28px;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .scores-grid {
+    grid-template-columns: 1fr;
+  }
+}
