@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -21,6 +22,7 @@ import './EmployeeManagement.css';
 export default function EmployeeManagement() {
   const { employees, addEmployee, updateEmployee } = useData();
   const toast = useToast();
+  const navigate = useNavigate();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -180,92 +182,85 @@ export default function EmployeeManagement() {
         </select>
       </div>
 
-      {/* Employee Table */}
-      <div className="employee-table card">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Employee ID</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Department</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.map(emp => (
-              <tr key={emp.id} className={emp.status === 'inactive' ? 'inactive-row' : ''}>
-                <td><code>{emp.id}</code></td>
-                <td>
-                  <div className="employee-cell">
-                    <div className="emp-avatar">{emp.name.split(' ').map(n => n[0]).join('')}</div>
-                    <div>
-                      <span className="emp-name">{emp.name}</span>
-                      <span className="emp-email">{emp.email}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <span className={`role-badge ${emp.role}`}>
-                    {emp.role === 'hr' ? 'HR Admin' : 'Employee'}
-                  </span>
-                </td>
-                <td>{emp.department}</td>
-                <td>
-                  <span className={`status-pill ${emp.status === 'inactive' ? 'inactive' : 'active'}`}>
-                    {emp.status === 'inactive' ? 'Inactive' : 'Active'}
-                  </span>
-                </td>
-                <td>
-                  <div className="actions-cell">
-                    <button 
-                      className="action-btn"
-                      onClick={() => setActiveMenu(activeMenu === emp.id ? null : emp.id)}
-                    >
-                      <MoreVertical size={18} />
+      {/* Employee Cards Grid */}
+      <div className="employee-cards-grid">
+        {filteredEmployees.map(emp => {
+          const initials = emp.name.split(' ').map(n => n[0]).join('').toUpperCase();
+          const isInactive = emp.status === 'inactive';
+          
+          return (
+            <div key={emp.id} className={`employee-card ${isInactive ? 'inactive' : ''}`}>
+              <div className="card-menu">
+                <button 
+                  className="menu-btn"
+                  onClick={() => setActiveMenu(activeMenu === emp.id ? null : emp.id)}
+                >
+                  <MoreVertical size={18} />
+                </button>
+                {activeMenu === emp.id && (
+                  <div className="action-menu">
+                    <button onClick={() => {
+                      navigate(`/admin/employees/${emp.id}/profile`);
+                      setActiveMenu(null);
+                    }}>
+                      <Eye size={16} /> View Profile
                     </button>
-                    {activeMenu === emp.id && (
-                      <div className="action-menu">
-                        <button onClick={() => {
-                          setSelectedEmployee(emp);
-                          setShowViewModal(true);
-                          setActiveMenu(null);
-                        }}>
-                          <Eye size={16} /> View Profile
-                        </button>
-                        <button onClick={() => {
-                          setSelectedEmployee(emp);
-                          setShowEditModal(true);
-                          setActiveMenu(null);
-                        }}>
-                          <Edit size={16} /> Edit Profile
-                        </button>
-                        <div className="menu-divider" />
-                        {emp.status === 'inactive' ? (
-                          <button className="enable" onClick={() => {
-                            handleEnableEmployee(emp);
-                            setActiveMenu(null);
-                          }}>
-                            <UserCheck size={16} /> Enable Account
-                          </button>
-                        ) : (
-                          <button className="danger" onClick={() => {
-                            setSelectedEmployee(emp);
-                            setShowDisableModal(true);
-                            setActiveMenu(null);
-                          }}>
-                            <UserX size={16} /> Disable Account
-                          </button>
-                        )}
-                      </div>
+                    <button onClick={() => {
+                      setSelectedEmployee(emp);
+                      setShowEditModal(true);
+                      setActiveMenu(null);
+                    }}>
+                      <Edit size={16} /> Edit Profile
+                    </button>
+                    <div className="menu-divider" />
+                    {isInactive ? (
+                      <button className="enable" onClick={() => {
+                        handleEnableEmployee(emp);
+                        setActiveMenu(null);
+                      }}>
+                        <UserCheck size={16} /> Enable Account
+                      </button>
+                    ) : (
+                      <button className="danger" onClick={() => {
+                        setSelectedEmployee(emp);
+                        setShowDisableModal(true);
+                        setActiveMenu(null);
+                      }}>
+                        <UserX size={16} /> Disable Account
+                      </button>
                     )}
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                )}
+              </div>
+              
+              <div className="card-avatar">
+                <div className="avatar-circle">{initials}</div>
+              </div>
+              
+              <div className="card-id">{emp.id}</div>
+              <h3 className="card-name">{emp.name}</h3>
+              
+              <div className="card-info">
+                <div className="info-row">
+                  <span className="info-label">Job Title</span>
+                  <span className="info-value">{emp.designation || 'Team Member'}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Department</span>
+                  <span className="info-value">{emp.department}</span>
+                </div>
+              </div>
+              
+              <div className="card-badges">
+                <span className="badge badge-green">Full-Time</span>
+                <span className="badge badge-gray">{emp.status === 'on-leave' ? 'On-Site' : emp.status === 'absent' ? 'Remote' : 'Hybrid'}</span>
+                <span className={`badge ${isInactive ? 'badge-red' : 'badge-teal'}`}>
+                  {isInactive ? 'Inactive' : 'Active'}
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Create Employee Modal */}

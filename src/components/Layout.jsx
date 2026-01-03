@@ -81,9 +81,7 @@ export default function Layout() {
     { path: '/admin/employees', icon: Users, label: 'Employees' },
     { path: '/admin/attendance', icon: Calendar, label: 'Attendance' },
     { path: '/admin/leave-approval', icon: ClipboardCheck, label: 'Leave Approval' },
-    { path: '/admin/salary-config', icon: Wallet, label: 'Salary Config' },
-    { path: '/admin/payroll-processing', icon: DollarSign, label: 'Payroll' },
-    { path: '/admin/payroll-intelligence', icon: Brain, label: 'Intelligence' },
+    { path: '/admin/salary', icon: DollarSign, label: 'Salary' },
     { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
     { path: '/admin/reports', icon: Download, label: 'Reports' },
   ];

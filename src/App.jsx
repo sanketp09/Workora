@@ -11,6 +11,7 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
+import EmployeePrivateInfo from './pages/EmployeePrivateInfo';
 import Attendance from './pages/Attendance';
 import TimeOff from './pages/TimeOff';
 import Salary from './pages/Salary';
@@ -20,11 +21,10 @@ import Reports from './pages/Reports';
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import EmployeeManagement from './pages/admin/EmployeeManagement';
+import AdminEmployeePortal from './pages/admin/AdminEmployeePortal';
 import AttendanceOversight from './pages/admin/AttendanceOversight';
 import LeaveApproval from './pages/admin/LeaveApproval';
-import SalaryConfig from './pages/admin/SalaryConfig';
-import PayrollProcessing from './pages/admin/PayrollProcessing';
-import PayrollIntelligence from './pages/admin/PayrollIntelligence';
+import AdminSalary from './pages/admin/Salary';
 import AuditLogs from './pages/admin/AuditLogs';
 import AdminReports from './pages/admin/AdminReports';
 
@@ -82,6 +82,7 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="employees" element={<Employees />} />
+        <Route path="employees/private-info" element={<EmployeePrivateInfo />} />
         <Route path="attendance" element={<Attendance />} />
         <Route path="time-off" element={<TimeOff />} />
         <Route path="salary" element={<Salary />} />
@@ -93,11 +94,10 @@ function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="employees" element={<EmployeeManagement />} />
+          <Route path="employees/:employeeId/profile" element={<AdminEmployeePortal />} />
           <Route path="attendance" element={<AttendanceOversight />} />
           <Route path="leave-approval" element={<LeaveApproval />} />
-          <Route path="salary-config" element={<SalaryConfig />} />
-          <Route path="payroll-processing" element={<PayrollProcessing />} />
-          <Route path="payroll-intelligence" element={<PayrollIntelligence />} />
+          <Route path="salary" element={<AdminSalary />} />
           <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="reports" element={<AdminReports />} />
         </Route>
