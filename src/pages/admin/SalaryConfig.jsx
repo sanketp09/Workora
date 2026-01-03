@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DollarSign,
   Save,
@@ -11,7 +11,7 @@ import { useToast } from '../../context/ToastContext';
 import './SalaryConfig.css';
 
 export default function SalaryConfig() {
-  const { employees } = useData();
+  const { employees, getEmployeeSalary } = useData();
   const toast = useToast();
   
   const [selectedEmployee, setSelectedEmployee] = useState(employees[0]?.id);
@@ -35,6 +35,32 @@ export default function SalaryConfig() {
   });
 
   const employee = employees.find(e => e.id === selectedEmployee);
+
+  // Fetch salary data when employee changes
+  useEffect(() => {
+    const fetchSalary = async () => {
+      if (selectedEmployee && getEmployeeSalary) {
+        try {
+          const data = await getEmployeeSalary(selectedEmployee);
+          if (data) {
+            setSalaryData(prev => ({
+              ...prev,
+              basicSalary: data.basic || data.basicSalary || 0,
+              hra: data.hra || 0,
+              standardAllowance: data.allowance || data.standardAllowance || 0,
+              performanceBonus: data.bonus || data.performanceBonus || 0,
+              lta: data.lta || 0,
+              fixedAllowance: data.fixedAllowance || 0,
+              monthlyWage: data.wage || data.monthlyWage || 0
+            }));
+          }
+        } catch (error) {
+          console.error('Error fetching salary:', error);
+        }
+      }
+    };
+    fetchSalary();
+  }, [selectedEmployee, getEmployeeSalary]);
 
   // Calculate totals when salary components change
   useEffect(() => {
@@ -160,7 +186,7 @@ export default function SalaryConfig() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Wage (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Wage (?)</label>
                     <input
                       type="number"
                       value={salaryData.monthlyWage}
@@ -170,14 +196,14 @@ export default function SalaryConfig() {
                     <p className="text-xs text-gray-500 mt-1">Calculated from salary components</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Wage (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Yearly Wage (?)</label>
                     <input
                       type="number"
                       value={salaryData.yearlyWage}
                       readOnly
                       className="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Monthly wage × 12</p>
+                    <p className="text-xs text-gray-500 mt-1">Monthly wage  12</p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">No. of working days in a week</label>
@@ -207,7 +233,7 @@ export default function SalaryConfig() {
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Basic Salary (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Basic Salary (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.basicSalary}
@@ -221,7 +247,7 @@ export default function SalaryConfig() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">House Rent Allowance (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">House Rent Allowance (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.hra}
@@ -235,7 +261,7 @@ export default function SalaryConfig() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Standard Allowance (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Standard Allowance (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.standardAllowance}
@@ -249,7 +275,7 @@ export default function SalaryConfig() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Performance Bonus (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Performance Bonus (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.performanceBonus}
@@ -263,7 +289,7 @@ export default function SalaryConfig() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Leave Travel Allowance (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Leave Travel Allowance (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.lta}
@@ -277,7 +303,7 @@ export default function SalaryConfig() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Allowance (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Fixed Allowance (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.fixedAllowance}
@@ -294,7 +320,7 @@ export default function SalaryConfig() {
                 <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900">Total Monthly Gross Salary:</span>
-                    <span className="text-2xl font-bold text-blue-600">₹{totalSalaryComponents.toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-blue-600">?{totalSalaryComponents.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -325,7 +351,7 @@ export default function SalaryConfig() {
                     <p className="text-xs text-gray-500 mt-1">Calculated based on Basic Salary</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Employee PF (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employee PF (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.pfEmployee}
@@ -334,7 +360,7 @@ export default function SalaryConfig() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Employer PF (₹/month)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Employer PF (?/month)</label>
                     <input
                       type="number"
                       value={salaryData.pfEmployer}
@@ -352,7 +378,7 @@ export default function SalaryConfig() {
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Tax (₹)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Professional Tax (?)</label>
                     <input
                       type="number"
                       value={salaryData.professionalTax}
@@ -372,17 +398,17 @@ export default function SalaryConfig() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-700">Gross Salary:</span>
-                    <span className="text-xl font-bold text-gray-900">₹{totalSalaryComponents.toFixed(2)}</span>
+                    <span className="text-xl font-bold text-gray-900">?{totalSalaryComponents.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="font-medium text-gray-700">Total Deductions:</span>
-                    <span className="text-xl font-bold text-red-600">₹{(salaryData.pfEmployee + salaryData.professionalTax).toFixed(2)}</span>
+                    <span className="text-xl font-bold text-red-600">?{(salaryData.pfEmployee + salaryData.professionalTax).toFixed(2)}</span>
                   </div>
                   <div className="md:col-span-2 border-t border-blue-300 pt-4">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-bold text-gray-900">Net Salary (Take Home):</span>
                       <span className="text-2xl font-bold text-green-600">
-                        ₹{(totalSalaryComponents - salaryData.pfEmployee - salaryData.professionalTax).toFixed(2)}
+                        ?{(totalSalaryComponents - salaryData.pfEmployee - salaryData.professionalTax).toFixed(2)}
                       </span>
                     </div>
                   </div>

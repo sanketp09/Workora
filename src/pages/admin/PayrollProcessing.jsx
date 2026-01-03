@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   DollarSign,
   Download,
@@ -24,49 +24,61 @@ export default function PayrollProcessing() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [payrollData, setPayrollData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Generate payroll data for each employee
-  const generatePayrollData = () => {
-    return employees.map((emp, index) => {
-      const salary = getEmployeeSalary(emp.id);
-      const workingDays = 22;
-      const presentDays = Math.floor(18 + Math.random() * 5);
-      const unpaidLeaves = Math.max(0, Math.floor(Math.random() * 3));
-      const payableDays = Math.min(presentDays + (workingDays - presentDays - unpaidLeaves), workingDays);
-      
-      const dailyWage = salary.wage / workingDays;
-      const grossSalary = dailyWage * payableDays;
-      const deductions = salary.wage * 0.12 * 0.5 + 200; // PF + PT
-      const netSalary = grossSalary - deductions;
-      
-      // Random status
-      const statusRandom = Math.random();
-      let status;
-      if (index < 3) {
-        status = 'draft';
-      } else if (statusRandom > 0.2) {
-        status = 'finalized';
-      } else {
-        status = 'draft';
-      }
+  useEffect(() => {
+    const generatePayrollData = async () => {
+      setLoading(true);
+      const payrollPromises = employees.map(async (emp, index) => {
+        const salary = await getEmployeeSalary(emp.id);
+        const wage = salary?.wage || 50000;
+        const workingDays = 22;
+        const presentDays = Math.floor(18 + Math.random() * 5);
+        const unpaidLeaves = Math.max(0, Math.floor(Math.random() * 3));
+        const payableDays = Math.min(presentDays + (workingDays - presentDays - unpaidLeaves), workingDays);
+        
+        const dailyWage = wage / workingDays;
+        const grossSalary = dailyWage * payableDays;
+        const deductions = wage * 0.12 * 0.5 + 200; // PF + PT
+        const netSalary = grossSalary - deductions;
+        
+        // Random status
+        const statusRandom = Math.random();
+        let status;
+        if (index < 3) {
+          status = 'draft';
+        } else if (statusRandom > 0.2) {
+          status = 'finalized';
+        } else {
+          status = 'draft';
+        }
 
-      return {
-        employeeId: emp.id,
-        employeeName: emp.name,
-        department: emp.department,
-        workingDays,
-        presentDays,
-        payableDays,
-        unpaidLeaves,
-        grossSalary,
-        deductions,
-        netSalary,
-        status
-      };
-    });
-  };
+        return {
+          employeeId: emp.id,
+          employeeName: emp.name,
+          department: emp.department,
+          workingDays,
+          presentDays,
+          payableDays,
+          unpaidLeaves,
+          grossSalary,
+          deductions,
+          netSalary,
+          status
+        };
+      });
 
-  const [payrollData, setPayrollData] = useState(generatePayrollData());
+      const data = await Promise.all(payrollPromises);
+      setPayrollData(data);
+      setLoading(false);
+    };
+
+    if (employees.length > 0) {
+      generatePayrollData();
+    }
+  }, [employees, getEmployeeSalary]);
 
   const filteredData = payrollData.filter(emp => {
     const matchesSearch = emp.employeeName.toLowerCase().includes(searchQuery.toLowerCase());

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Download, 
   DollarSign, 
@@ -27,8 +27,19 @@ export default function Salary() {
   const [expandedSection, setExpandedSection] = useState('earnings');
   const [isEditing, setIsEditing] = useState(false);
   const [editedWage, setEditedWage] = useState('');
+  const [salary, setSalary] = useState({ wage: 50000, basic: 25000, hra: 12500, allowance: 4167, bonus: 4167, lta: 4167 });
   
-  const salary = getEmployeeSalary(selectedEmployee);
+  // Fetch salary data
+  useEffect(() => {
+    const fetchSalary = async () => {
+      if (selectedEmployee) {
+        const data = await getEmployeeSalary(selectedEmployee);
+        setSalary(data || { wage: 50000, basic: 25000, hra: 12500, allowance: 4167, bonus: 4167, lta: 4167 });
+      }
+    };
+    fetchSalary();
+  }, [selectedEmployee, getEmployeeSalary]);
+
   const employee = employees.find(e => e.id === selectedEmployee);
 
   // Calculate salary components

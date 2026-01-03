@@ -89,6 +89,25 @@ router.post('/clock', authenticateToken, async (req, res) => {
   }
 });
 
+// Get attendance by employee ID
+router.get('/employee/:employeeId', authenticateToken, async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const result = await pool.query(
+      `SELECT a.*, e.name as employee_name, e.department 
+       FROM attendance a 
+       JOIN employees e ON a.employee_id = e.id 
+       WHERE a.employee_id = $1 
+       ORDER BY a.date DESC`,
+      [employeeId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching employee attendance:', error);
+    res.status(500).json({ error: 'Failed to fetch employee attendance' });
+  }
+});
+
 // Get attendance summary
 router.get('/summary/:employee_id', authenticateToken, async (req, res) => {
   try {
