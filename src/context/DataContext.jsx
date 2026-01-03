@@ -3,7 +3,8 @@ import {
   employeesAPI, 
   attendanceAPI, 
   leaveRequestsAPI, 
-  salaryAPI 
+  salaryAPI,
+  notificationsAPI 
 } from '../services/api';
 
 const DataContext = createContext(null);
@@ -16,11 +17,7 @@ export function DataProvider({ children }) {
   const [salaryData, setSalaryData] = useState({});
   const [todayCheckIn, setTodayCheckIn] = useState(null);
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [notifications, setNotifications] = useState([
-    { id: 1, message: 'Leave request approved', time: '2 hours ago', read: false },
-    { id: 2, message: 'Salary slip generated for December', time: '1 day ago', read: false },
-    { id: 3, message: 'Welcome to Workora!', time: '2 days ago', read: true },
-  ]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,8 +34,49 @@ export function DataProvider({ children }) {
       
       // Load leave requests for current user
       const leaveRequestsData = await leaveRequestsAPI.getAll();
-      setLeaves(leaveRequestsData);
-      setLeaveRequests(leaveRequestsData);
+      
+      // Transform backend format to frontend format
+      const transformedLeaves = leaveRequestsData.map(req => ({
+        id: req.id,
+        employeeId: req.employee_id,
+        employeeName: req.employee_name,
+        department: req.department,
+        type: req.type,
+        startDate: req.start_date,
+        endDate: req.end_date,
+        days: req.days_requested,
+        reason: req.reason,
+        status: req.status,
+        appliedOn: req.created_at ? new Date(req.created_at).toISOString().split('T')[0] : null,
+        approvedBy: req.approved_by,
+        approvedAt: req.approved_at
+      }));
+      
+      setLeaves(transformedLeaves);
+      setLeaveRequests(transformedLeaves);
+      
+      // Load notifications for current user
+      const userData = localStorage.getItem('workora_user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.employeeId) {
+            const notificationsData = await notificationsAPI.getByEmployee(user.employeeId);
+            const transformedNotifications = notificationsData.map(n => ({
+              id: n.id,
+              title: n.title,
+              message: n.message,
+              type: n.type,
+              read: n.read,
+              time: getRelativeTime(n.created_at),
+              createdAt: n.created_at
+            }));
+            setNotifications(transformedNotifications);
+          }
+        } catch (err) {
+          console.error('Error loading notifications:', err);
+        }
+      }
       
       // Check for today's check-in from localStorage
       const savedCheckIn = localStorage.getItem('workora_checkin');
@@ -54,6 +92,23 @@ export function DataProvider({ children }) {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Helper function to get relative time
+  const getRelativeTime = (dateStr) => {
+    if (!dateStr) return 'Just now';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
   const checkIn = async (userId) => {
@@ -165,30 +220,96 @@ export function DataProvider({ children }) {
     }
   };
 
-  const markNotificationRead = (id) => {
-    setNotifications(notifications.map(n => 
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const addEmployee = async (employeeData) => {
+    try {
+      const result = await employeesAPI.create(employeeData);
+      // Add new employee to state
+      if (result.employee) {
+        setEmployees([...employees, result.employee]);
+      }
+      return result;
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      throw error;
+    }
+  };
+
+  const updateEmployee = async (employeeId, employeeData) => {
+    try {
+      const result = await employeesAPI.update(employeeId, employeeData);
+      // Update employee in state
+      if (result.employee) {
+        setEmployees(employees.map(emp => 
+          emp.id === employeeId ? result.employee : emp
+        ));
+      }
+      return result;
+    } catch (error) {
+      console.error('Error updating employee:', error);
+      throw error;
+    }
+  };
+
+  const markNotificationRead = async (id) => {
+    try {
+      await notificationsAPI.markAsRead(id);
+      setNotifications(notifications.map(n => 
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const addLeaveRequest = async (request) => {
     try {
-      const newRequest = await leaveRequestsAPI.create(request);
-      setLeaveRequests([...leaveRequests, newRequest]);
-      setLeaves([...leaves, newRequest]);
-      return newRequest;
+      // Transform frontend format to backend format
+      const backendRequest = {
+        employee_id: request.employeeId,
+        type: request.type,
+        start_date: request.startDate,
+        end_date: request.endDate,
+        days_requested: request.days,
+        reason: request.reason
+      };
+      
+      const newRequest = await leaveRequestsAPI.create(backendRequest);
+      
+      // Transform backend response to frontend format
+      const frontendRequest = {
+        id: newRequest.id,
+        employeeId: newRequest.employee_id,
+        employeeName: request.employeeName,
+        department: request.department,
+        type: newRequest.type,
+        startDate: newRequest.start_date,
+        endDate: newRequest.end_date,
+        days: newRequest.days_requested,
+        reason: newRequest.reason,
+        status: newRequest.status,
+        appliedOn: new Date(newRequest.created_at).toISOString().split('T')[0],
+        attachment: request.attachment
+      };
+      
+      setLeaveRequests([...leaveRequests, frontendRequest]);
+      setLeaves([...leaves, frontendRequest]);
+      return frontendRequest;
     } catch (error) {
       console.error('Error adding leave request:', error);
       throw error;
     }
   };
 
-  const updateLeaveRequestStatus = async (requestId, status, rejectionReason = null) => {
+  const updateLeaveRequestStatus = async (requestId, status, rejectionReason = null, adminComment = null) => {
     try {
-      await leaveRequestsAPI.updateStatus(requestId, status, rejectionReason);
+      await leaveRequestsAPI.updateStatus(requestId, { 
+        status, 
+        rejection_reason: rejectionReason,
+        admin_comment: adminComment
+      });
       const updatedRequests = leaveRequests.map(req => 
         req.id === requestId 
-          ? { ...req, status, rejection_reason: rejectionReason, processed_at: new Date().toISOString() }
+          ? { ...req, status, rejectionReason: rejectionReason, processedAt: new Date().toISOString() }
           : req
       );
       setLeaveRequests(updatedRequests);
@@ -223,6 +344,8 @@ export function DataProvider({ children }) {
       addLeaveRequest,
       updateLeaveRequestStatus,
       loadInitialData,
+      addEmployee,
+      updateEmployee,
     }}>
       {children}
     </DataContext.Provider>

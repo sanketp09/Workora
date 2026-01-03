@@ -47,9 +47,10 @@ export default function EmployeeManagement() {
   const departments = ['Engineering', 'Design', 'Product', 'HR', 'Marketing', 'Finance', 'Operations'];
 
   const filteredEmployees = employees.filter(emp => {
+    const empId = String(emp.id || '');
     const matchesSearch = emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         emp.id.toLowerCase().includes(searchQuery.toLowerCase());
+                         empId.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesDept = departmentFilter === 'all' || emp.department === departmentFilter;
     const matchesStatus = statusFilter === 'all' || 
                          (statusFilter === 'active' && emp.status !== 'inactive') ||
@@ -71,33 +72,46 @@ export default function EmployeeManagement() {
     return password;
   };
 
-  const handleCreateEmployee = () => {
+  const handleCreateEmployee = async () => {
     if (!newEmployee.firstName || !newEmployee.lastName || !newEmployee.email) {
       toast.error('Please fill in all required fields');
       return;
     }
 
-    const loginId = generateLoginId(newEmployee.firstName, newEmployee.lastName, newEmployee.yearOfJoining);
-    const tempPassword = generatePassword();
+    try {
+      const employeeData = {
+        name: `${newEmployee.firstName} ${newEmployee.lastName}`,
+        email: newEmployee.email,
+        role: newEmployee.role,
+        department: newEmployee.department,
+        position: newEmployee.role === 'hr' ? 'HR Manager' : 'Team Member',
+        hire_date: `${newEmployee.yearOfJoining}-01-15`,
+        salary: 50000,
+        phone: '',
+        address: '',
+        emergency_contact: null
+      };
 
-    const employee = {
-      id: loginId,
-      name: `${newEmployee.firstName} ${newEmployee.lastName}`,
-      email: newEmployee.email,
-      role: newEmployee.role,
-      department: newEmployee.department,
-      position: newEmployee.role === 'hr' ? 'HR Manager' : 'Team Member',
-      joinDate: `${newEmployee.yearOfJoining}-01-15`,
-      status: 'active',
-      avatar: null
-    };
-
-    if (addEmployee) {
-      addEmployee(employee);
+      const result = await addEmployee(employeeData);
+      
+      if (result && result.credentials) {
+        setGeneratedCredentials({ 
+          loginId: result.credentials.loginId, 
+          tempPassword: result.credentials.tempPassword, 
+          email: result.credentials.email 
+        });
+        toast.success('Employee created successfully!');
+      } else {
+        // Fallback for local-only mode
+        const loginId = generateLoginId(newEmployee.firstName, newEmployee.lastName, newEmployee.yearOfJoining);
+        const tempPassword = generatePassword();
+        setGeneratedCredentials({ loginId, tempPassword, email: newEmployee.email });
+        toast.success('Employee created successfully!');
+      }
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      toast.error('Failed to create employee: ' + (error.message || 'Unknown error'));
     }
-
-    setGeneratedCredentials({ loginId, tempPassword, email: newEmployee.email });
-    toast.success('Employee created successfully!');
   };
 
   const handleCopyCredentials = (text) => {

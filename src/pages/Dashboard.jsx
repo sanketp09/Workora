@@ -15,12 +15,40 @@ import {
   DollarSign,
   BarChart3,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  MapPin,
+  AlertCircle,
+  X,
+  Loader2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import './Dashboard.css';
+
+// Office location configuration (latitude, longitude, allowed radius in meters)
+const OFFICE_LOCATION = {
+  latitude: 19.0760,  // Example: Mumbai coordinates - Replace with your actual office coordinates
+  longitude: 72.8777,
+  allowedRadius: 200, // 200 meters radius
+  name: 'Workora Office'
+};
+
+// Calculate distance between two coordinates using Haversine formula
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth's radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return R * c; // Distance in meters
+};
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -30,6 +58,13 @@ export default function Dashboard() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [attendance, setAttendance] = useState([]);
+  
+  // Location verification states
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('idle'); // idle, loading, success, error, denied
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState('');
+  const [distanceFromOffice, setDistanceFromOffice] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -74,7 +109,72 @@ export default function Dashboard() {
     });
   };
 
-  const handleCheckIn = async () => {
+  // Location verification function
+  const verifyLocation = () => {
+    setShowLocationModal(true);
+    setLocationStatus('loading');
+    setLocationError('');
+    setUserLocation(null);
+    setDistanceFromOffice(null);
+
+    if (!navigator.geolocation) {
+      setLocationStatus('error');
+      setLocationError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        setUserLocation({ latitude, longitude, accuracy });
+        
+        const distance = calculateDistance(
+          latitude, 
+          longitude, 
+          OFFICE_LOCATION.latitude, 
+          OFFICE_LOCATION.longitude
+        );
+        setDistanceFromOffice(Math.round(distance));
+
+        if (distance <= OFFICE_LOCATION.allowedRadius) {
+          setLocationStatus('success');
+        } else {
+          setLocationStatus('denied');
+          setLocationError(`You are ${Math.round(distance)}m away from the office. You must be within ${OFFICE_LOCATION.allowedRadius}m to check in.`);
+        }
+      },
+      (error) => {
+        setLocationStatus('error');
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError('Location access denied. Please enable location permissions to check in.');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError('Location information is unavailable. Please try again.');
+            break;
+          case error.TIMEOUT:
+            setLocationError('Location request timed out. Please try again.');
+            break;
+          default:
+            setLocationError('An error occurred while getting your location.');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
+  // Called when user clicks Check In button
+  const initiateCheckIn = () => {
+    verifyLocation();
+  };
+
+  // Confirm check-in after location verification
+  const confirmCheckIn = async () => {
+    setShowLocationModal(false);
     setIsCheckingIn(true);
     await new Promise(resolve => setTimeout(resolve, 500));
     checkIn(user.id);
@@ -88,6 +188,11 @@ export default function Dashboard() {
     checkOut(user.id);
     toast.success('Successfully checked out! See you tomorrow! 👋');
     setIsCheckingIn(false);
+  };
+
+  const closeLocationModal = () => {
+    setShowLocationModal(false);
+    setLocationStatus('idle');
   };
 
   const isCheckedIn = todayCheckIn && !todayCheckIn.checkOutTime;
@@ -187,7 +292,7 @@ export default function Dashboard() {
           {!isCheckedOut && (
             <button 
               className={`btn ${isCheckedIn ? 'btn-danger' : 'btn-success'} btn-lg checkin-btn`}
-              onClick={isCheckedIn ? handleCheckOut : handleCheckIn}
+              onClick={isCheckedIn ? handleCheckOut : initiateCheckIn}
               disabled={isCheckingIn}
             >
               {isCheckingIn ? (
@@ -384,6 +489,72 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+      )}
+
+      {/* Location Verification Modal */}
+      {showLocationModal && (
+        <div className="location-modal-overlay" onClick={closeLocationModal}>
+          <div className="location-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={closeLocationModal}>
+              <X size={20} />
+            </button>
+            
+            <div className="modal-icon">
+              <MapPin size={40} />
+            </div>
+            
+            <h2>Location Verification</h2>
+            <p className="modal-subtitle">We need to verify your location before check-in</p>
+            
+            {locationStatus === 'loading' && (
+              <div className="location-status loading">
+                <Loader2 size={32} className="spin" />
+                <p>Getting your location...</p>
+                <span className="location-hint">Please allow location access when prompted</span>
+              </div>
+            )}
+            
+            {locationStatus === 'success' && (
+              <div className="location-status success">
+                <CheckCircle2 size={48} />
+                <p>Location Verified!</p>
+                <span className="location-distance">
+                  You are {distanceFromOffice}m from {OFFICE_LOCATION.name}
+                </span>
+                <button className="btn btn-success btn-lg" onClick={confirmCheckIn}>
+                  <LogIn size={20} />
+                  Confirm Check In
+                </button>
+              </div>
+            )}
+            
+            {locationStatus === 'denied' && (
+              <div className="location-status denied">
+                <AlertCircle size={48} />
+                <p>Cannot Check In</p>
+                <span className="location-error">{locationError}</span>
+                <div className="location-info">
+                  <MapPin size={16} />
+                  <span>Office: {OFFICE_LOCATION.name}</span>
+                </div>
+                <button className="btn btn-secondary" onClick={verifyLocation}>
+                  Try Again
+                </button>
+              </div>
+            )}
+            
+            {locationStatus === 'error' && (
+              <div className="location-status error">
+                <AlertCircle size={48} />
+                <p>Location Error</p>
+                <span className="location-error">{locationError}</span>
+                <button className="btn btn-secondary" onClick={verifyLocation}>
+                  Retry
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

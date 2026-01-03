@@ -114,6 +114,7 @@ export const leaveRequestsAPI = {
     method: 'PUT',
     body: JSON.stringify(statusData),
   }),
+  getBalance: (employeeId) => apiRequest(`/leave-requests/balance/${employeeId}`),
 };
 
 // Salary API
@@ -156,6 +157,15 @@ export const documentsAPI = {
   },
 };
 
+// Notifications API
+export const notificationsAPI = {
+  getByEmployee: (employeeId) => apiRequest(`/notifications/employee/${employeeId}`),
+  getAll: () => apiRequest('/notifications'),
+  markAsRead: (id) => apiRequest(`/notifications/${id}/read`, { method: 'PUT' }),
+  markAllAsRead: (employeeId) => apiRequest(`/notifications/employee/${employeeId}/read-all`, { method: 'PUT' }),
+  getUnreadCount: (employeeId) => apiRequest(`/notifications/employee/${employeeId}/unread-count`),
+};
+
 export default {
   auth: authAPI,
   employees: employeesAPI,
@@ -164,4 +174,5 @@ export default {
   salary: salaryAPI,
   payroll: payrollAPI,
   documents: documentsAPI,
+  notifications: notificationsAPI,
 };

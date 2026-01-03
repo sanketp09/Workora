@@ -14,6 +14,7 @@ import reportsRoutes from './routes/reports.js';
 import dashboardRoutes from './routes/dashboard.js';
 import leaveRequestsRoutes from './routes/leave-requests.js';
 import salariesRoutes from './routes/salaries.js';
+import notificationsRoutes from './routes/notifications.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/leave-requests', leaveRequestsRoutes);
 app.use('/api/salaries', salariesRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

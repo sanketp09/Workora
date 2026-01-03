@@ -88,25 +88,55 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id/status', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, rejection_reason } = req.body;
-    const approved_by = req.user?.userId;
+    const { status, rejection_reason, admin_comment } = req.body;
+    const approved_by = req.user?.userId || null;
 
+    // Cast status explicitly to varchar to avoid type mismatch
     const result = await pool.query(
       `UPDATE time_off_requests 
-       SET status = $1, 
+       SET status = $1::varchar, 
            approved_by = $2, 
-           approved_at = CASE WHEN $1 IN ('approved', 'denied') THEN CURRENT_TIMESTAMP ELSE approved_at END,
+           approved_at = CASE WHEN $1::varchar IN ('approved', 'denied') THEN CURRENT_TIMESTAMP ELSE approved_at END,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $3
        RETURNING *`,
-      [status, approved_by, id]
+      [status, approved_by, parseInt(id)]
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Leave request not found' });
     }
 
-    res.json(result.rows[0]);
+    const leaveRequest = result.rows[0];
+    
+    // Create notification for the employee
+    try {
+      const notificationTitle = status === 'approved' 
+        ? 'Leave Request Approved ✓' 
+        : 'Leave Request Denied ✗';
+      
+      let notificationMessage = status === 'approved'
+        ? `Your leave request from ${new Date(leaveRequest.start_date).toLocaleDateString()} to ${new Date(leaveRequest.end_date).toLocaleDateString()} has been approved.`
+        : `Your leave request from ${new Date(leaveRequest.start_date).toLocaleDateString()} to ${new Date(leaveRequest.end_date).toLocaleDateString()} has been denied.`;
+      
+      if (admin_comment) {
+        notificationMessage += ` Comment: ${admin_comment}`;
+      }
+      if (rejection_reason) {
+        notificationMessage += ` Reason: ${rejection_reason}`;
+      }
+      
+      await pool.query(
+        `INSERT INTO notifications (employee_id, type, title, message, related_id)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [leaveRequest.employee_id, 'leave_status', notificationTitle, notificationMessage, leaveRequest.id]
+      );
+    } catch (notifError) {
+      console.error('Error creating notification (table may not exist):', notifError.message);
+      // Continue even if notification fails
+    }
+
+    res.json(leaveRequest);
   } catch (error) {
     console.error('Error updating leave request status:', error);
     res.status(500).json({ error: 'Failed to update leave request status' });
