@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
@@ -21,6 +22,7 @@ import './EmployeeManagement.css';
 export default function EmployeeManagement() {
   const { employees, addEmployee, updateEmployee } = useData();
   const toast = useToast();
+  const navigate = useNavigate();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -228,8 +230,7 @@ export default function EmployeeManagement() {
                     {activeMenu === emp.id && (
                       <div className="action-menu">
                         <button onClick={() => {
-                          setSelectedEmployee(emp);
-                          setShowViewModal(true);
+                          navigate(`/admin/employees/${emp.id}/profile`);
                           setActiveMenu(null);
                         }}>
                           <Eye size={16} /> View Profile
