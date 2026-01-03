@@ -1,4 +1,4 @@
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { 
   Home,
@@ -18,7 +18,13 @@ import {
   Menu,
   X,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Shield,
+  ClipboardCheck,
+  Wallet,
+  Brain,
+  ScrollText,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -26,6 +32,7 @@ import './Layout.css';
 
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut, switchRole } = useAuth();
   const { notifications, markNotificationRead } = useData();
   
@@ -38,6 +45,7 @@ export default function Layout() {
   const notifRef = useRef(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isAdminView = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -58,7 +66,7 @@ export default function Layout() {
     navigate('/signin');
   };
 
-  const navItems = [
+  const employeeNavItems = [
     { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/employees', icon: Users, label: 'Employees' },
     { path: '/attendance', icon: Calendar, label: 'Attendance' },
@@ -67,6 +75,20 @@ export default function Layout() {
     { path: '/payroll', icon: BarChart3, label: 'Payroll' },
     { path: '/reports', icon: FileText, label: 'Reports' },
   ];
+
+  const adminNavItems = [
+    { path: '/admin/dashboard', icon: Shield, label: 'Control Center' },
+    { path: '/admin/employees', icon: Users, label: 'Employees' },
+    { path: '/admin/attendance', icon: Calendar, label: 'Attendance' },
+    { path: '/admin/leave-approval', icon: ClipboardCheck, label: 'Leave Approval' },
+    { path: '/admin/salary-config', icon: Wallet, label: 'Salary Config' },
+    { path: '/admin/payroll-processing', icon: DollarSign, label: 'Payroll' },
+    { path: '/admin/payroll-intelligence', icon: Brain, label: 'Intelligence' },
+    { path: '/admin/audit-logs', icon: ScrollText, label: 'Audit Logs' },
+    { path: '/admin/reports', icon: Download, label: 'Reports' },
+  ];
+
+  const navItems = isAdminView ? adminNavItems : employeeNavItems;
 
   const getInitials = (name) => {
     return name
@@ -120,18 +142,18 @@ export default function Layout() {
         </div>
 
         <div className="navbar-right">
-          {/* Role Switch Toggle */}
+          {/* View Switch Toggle */}
           <button 
-            className="role-switch hide-mobile"
-            onClick={switchRole}
-            title={`Switch to ${user?.role === 'employee' ? 'HR' : 'Employee'} view`}
+            className={`role-switch hide-mobile ${isAdminView ? 'admin-active' : ''}`}
+            onClick={() => navigate(isAdminView ? '/dashboard' : '/admin/dashboard')}
+            title={`Switch to ${isAdminView ? 'Employee' : 'Admin'} view`}
           >
-            {user?.role === 'hr' ? (
-              <ToggleRight size={20} className="text-primary" />
+            {isAdminView ? (
+              <Shield size={18} className="text-primary" />
             ) : (
-              <ToggleLeft size={20} />
+              <User size={18} />
             )}
-            <span>{user?.role === 'hr' ? 'HR View' : 'Employee View'}</span>
+            <span>{isAdminView ? 'Admin Panel' : 'Employee View'}</span>
           </button>
 
           {/* Notifications */}
@@ -242,9 +264,15 @@ export default function Layout() {
             </NavLink>
           ))}
           <div className="mobile-nav-divider" />
-          <button className="mobile-nav-link" onClick={switchRole}>
-            {user?.role === 'hr' ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
-            <span>Switch to {user?.role === 'hr' ? 'Employee' : 'HR'} View</span>
+          <button 
+            className="mobile-nav-link" 
+            onClick={() => {
+              navigate(isAdminView ? '/dashboard' : '/admin/dashboard');
+              setShowMobileMenu(false);
+            }}
+          >
+            {isAdminView ? <User size={20} /> : <Shield size={20} />}
+            <span>Switch to {isAdminView ? 'Employee' : 'Admin'} View</span>
           </button>
         </div>
       )}

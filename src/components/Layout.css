@@ -140,6 +140,16 @@
   background: var(--gray-200);
 }
 
+.role-switch.admin-active {
+  background: linear-gradient(135deg, var(--primary-light) 0%, #ede9fe 100%);
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.role-switch.admin-active:hover {
+  background: linear-gradient(135deg, #ddd6fe 0%, #c4b5fd 100%);
+}
+
 .icon-btn {
   position: relative;
   width: 40px;
