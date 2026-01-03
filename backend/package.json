@@ -1,23 +1,35 @@
 {
   "name": "workora-backend",
   "version": "1.0.0",
-  "description": "Backend API for Workora employee management system",
+  "description": "Backend API for Workora HR Management System",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "db:setup": "psql -U postgres -d workora -f database/schema.sql"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["workora", "employee", "management", "hr"],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
+    "bcryptjs": "^2.4.3",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
-    "pg": "^8.11.3",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
-  }
+  },
+  "keywords": [
+    "nodejs",
+    "express",
+    "postgresql",
+    "api",
+    "hr-management"
+  ],
+  "author": "Your Name",
+  "license": "ISC"
 }

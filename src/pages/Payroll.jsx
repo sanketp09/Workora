@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   TrendingUp,
   Calendar,
@@ -35,9 +35,24 @@ export default function Payroll() {
   
   const [selectedEmployee, setSelectedEmployee] = useState(user?.id);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  
-  const salary = getEmployeeSalary(selectedEmployee);
-  const attendance = getEmployeeAttendance(selectedEmployee);
+  const [salary, setSalary] = useState({ wage: 50000, basic: 25000, hra: 12500, allowance: 4167, bonus: 4167, lta: 4167 });
+  const [attendance, setAttendance] = useState([]);
+
+  // Fetch salary and attendance data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (selectedEmployee) {
+        const [salaryData, attendanceData] = await Promise.all([
+          getEmployeeSalary(selectedEmployee),
+          getEmployeeAttendance(selectedEmployee)
+        ]);
+        setSalary(salaryData || { wage: 50000, basic: 25000, hra: 12500, allowance: 4167, bonus: 4167, lta: 4167 });
+        setAttendance(Array.isArray(attendanceData) ? attendanceData : []);
+      }
+    };
+    fetchData();
+  }, [selectedEmployee, getEmployeeSalary, getEmployeeAttendance]);
+
   const leaves = getEmployeeLeaves(selectedEmployee);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 

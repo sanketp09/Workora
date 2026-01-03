@@ -1,34 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { authAPI } from '../services/api';
 
 const AuthContext = createContext(null);
-
-// Demo users data
-const demoUsers = [
-  {
-    id: 'EMP001',
-    email: 'john.doe@dayflow.com',
-    password: 'Password123!',
-    name: 'John Doe',
-    role: 'employee',
-    avatar: null,
-    department: 'Engineering',
-    designation: 'Senior Developer',
-    phone: '+1 234 567 8901',
-    joinDate: '2023-03-15',
-  },
-  {
-    id: 'HR001',
-    email: 'sarah.admin@dayflow.com',
-    password: 'Admin123!',
-    name: 'Sarah Johnson',
-    role: 'hr',
-    avatar: null,
-    department: 'Human Resources',
-    designation: 'HR Manager',
-    phone: '+1 234 567 8902',
-    joinDate: '2022-01-10',
-  },
-];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -36,64 +9,75 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Check for existing session
-    const savedUser = localStorage.getItem('dayflow_user');
-    if (savedUser) {
+    const savedUser = localStorage.getItem('workora_user');
+    const token = localStorage.getItem('authToken');
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
     setIsLoading(false);
   }, []);
 
   const signIn = async (email, password) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = demoUsers.find(
-      u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('dayflow_user', JSON.stringify(userWithoutPassword));
+    try {
+      const response = await authAPI.login({ email, password });
+      const userData = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        role: response.user.role,
+        department: response.user.department,
+        designation: response.user.designation,
+      };
+      
+      setUser(userData);
+      localStorage.setItem('workora_user', JSON.stringify(userData));
+      
       return { success: true };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Invalid email or password'
+      };
     }
-    
-    return { success: false, error: 'Invalid email or password' };
   };
 
   const signUp = async (userData) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if email already exists
-    const exists = demoUsers.find(
-      u => u.email.toLowerCase() === userData.email.toLowerCase()
-    );
-    
-    if (exists) {
-      return { success: false, error: 'Email already registered' };
+    try {
+      const response = await authAPI.register({
+        email: userData.email,
+        password: userData.password,
+        name: userData.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        role: userData.role || 'employee',
+        employee_id: userData.employeeId,
+      });
+      
+      const newUser = {
+        id: response.user.id,
+        email: response.user.email,
+        name: response.user.name,
+        role: response.user.role,
+        department: response.user.department || 'Unassigned',
+        designation: response.user.designation || 'New Employee',
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('workora_user', JSON.stringify(newUser));
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Registration failed'
+      };
     }
-    
-    const newUser = {
-      id: userData.employeeId,
-      email: userData.email,
-      name: userData.email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      role: userData.role,
-      avatar: null,
-      department: 'Unassigned',
-      designation: 'New Employee',
-      phone: '',
-      joinDate: new Date().toISOString().split('T')[0],
-    };
-    
-    setUser(newUser);
-    localStorage.setItem('dayflow_user', JSON.stringify(newUser));
-    return { success: true };
   };
 
   const signOut = () => {
+    authAPI.logout();
     setUser(null);
-    localStorage.removeItem('dayflow_user');
+    localStorage.removeItem('workora_user');
   };
 
   const switchRole = () => {
@@ -101,12 +85,12 @@ export function AuthProvider({ children }) {
       const newRole = user.role === 'employee' ? 'hr' : 'employee';
       const updatedUser = { ...user, role: newRole };
       setUser(updatedUser);
-      localStorage.setItem('dayflow_user', JSON.stringify(updatedUser));
+      localStorage.setItem('workora_user', JSON.stringify(updatedUser));
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, switchRole }}>
+    <AuthContext.Provider value={{ user, isLoading: isLoading, signIn, signUp, signOut, switchRole }}>
       {children}
     </AuthContext.Provider>
   );

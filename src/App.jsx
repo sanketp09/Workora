@@ -24,6 +24,9 @@ import EmployeeManagement from './pages/admin/EmployeeManagement';
 import AdminEmployeePortal from './pages/admin/AdminEmployeePortal';
 import AttendanceOversight from './pages/admin/AttendanceOversight';
 import LeaveApproval from './pages/admin/LeaveApproval';
+import SalaryConfig from './pages/admin/SalaryConfig';
+import PayrollProcessing from './pages/admin/PayrollProcessing';
+import PayrollIntelligence from './pages/admin/PayrollIntelligence';
 import AdminSalary from './pages/admin/Salary';
 import AuditLogs from './pages/admin/AuditLogs';
 import AdminReports from './pages/admin/AdminReports';
@@ -38,7 +41,7 @@ function ProtectedRoute({ children }) {
     return (
       <div className="loading-screen">
         <div className="loading-spinner"></div>
-        <p>Loading Dayflow...</p>
+        <p>Loading Workora...</p>
       </div>
     );
   }
@@ -58,7 +61,7 @@ function PublicRoute({ children }) {
     return (
       <div className="loading-screen">
         <div className="loading-spinner"></div>
-        <p>Loading Dayflow...</p>
+        <p>Loading Workora...</p>
       </div>
     );
   }
@@ -74,11 +77,11 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/signin" element={<SignIn />} />
-      <Route path="/signup" element={<SignUp />} />
+      <Route path="/signin" element={<PublicRoute><SignIn /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
 
-      {/* Main App Routes - No authentication required */}
-      <Route path="/" element={<Layout />}>
+      {/* Main App Routes - Protected */}
+      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="employees" element={<Employees />} />
@@ -98,6 +101,9 @@ function AppRoutes() {
           <Route path="attendance" element={<AttendanceOversight />} />
           <Route path="leave-approval" element={<LeaveApproval />} />
           <Route path="salary" element={<AdminSalary />} />
+          <Route path="salary-config" element={<SalaryConfig />} />
+          <Route path="payroll-processing" element={<PayrollProcessing />} />
+          <Route path="payroll-intelligence" element={<PayrollIntelligence />} />
           <Route path="audit-logs" element={<AuditLogs />} />
           <Route path="reports" element={<AdminReports />} />
         </Route>

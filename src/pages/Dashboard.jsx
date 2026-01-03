@@ -29,6 +29,7 @@ export default function Dashboard() {
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isCheckingIn, setIsCheckingIn] = useState(false);
+  const [attendance, setAttendance] = useState([]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -36,6 +37,17 @@ export default function Dashboard() {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  // Fetch attendance data
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      if (user?.id) {
+        const data = await getEmployeeAttendance(user.id);
+        setAttendance(Array.isArray(data) ? data : []);
+      }
+    };
+    fetchAttendance();
+  }, [user?.id, getEmployeeAttendance]);
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -82,7 +94,6 @@ export default function Dashboard() {
   const isCheckedOut = todayCheckIn && todayCheckIn.checkOutTime;
 
   // Calculate stats
-  const attendance = getEmployeeAttendance(user?.id);
   const leaveBalance = getEmployeeLeaveBalance(user?.id);
   const leaves = getEmployeeLeaves(user?.id);
   
